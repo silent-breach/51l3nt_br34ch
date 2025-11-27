@@ -20,7 +20,7 @@ interface Props {
 	author?: string;
 }
 
-const { title, description = "NexoLabs - Elite CTF Team", canonical, image, author } = Astro.props;
+const { title, description = "51l3nt_br34ch// - Elite CTF Team", canonical, image, author } = Astro.props;
 const site = import.meta.env.SITE || '';
 const base = import.meta.env.BASE_URL || '';
 const canonicalUrl = canonical ?? (site ? `${site}${Astro.url.pathname}` : null);
@@ -51,7 +51,7 @@ const defaultImage = image ?? `${base}/favicon.svg`;
 		<meta property="og:description" content={description} />
 		{canonicalUrl ? <meta property="og:url" content={canonicalUrl} /> : null}
 		<meta property="og:image" content={defaultImage} />
-		<meta property="og:site_name" content="NexoLabs" />
+		<meta property="og:site_name" content="51l3nt_br34ch//" />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
@@ -64,7 +64,7 @@ const defaultImage = image ?? `${base}/favicon.svg`;
 		<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 		
 		<!-- RSS Feed -->
-		<link rel="alternate" type="application/rss+xml" title="NexoLabs Writeups" href={`${base}/rss.xml`} />
+		<link rel="alternate" type="application/rss+xml" title="51l3nt_br34ch// Writeups" href={`${base}/rss.xml`} />
 	</head>
 	<body class="bg-dark text-gray-100">
 		<Navbar />
@@ -82,8 +82,8 @@ const defaultImage = image ?? `${base}/favicon.svg`;
 				--text-primary: #e5e5e5;
 				--text-secondary: #9ca3af;
 				--accent-cyan: #00ffff;
-				--accent-magenta: #ff00ff;
-				--accent-purple: #8a2be2;
+				--accent-magenta: #2906f1;
+				--accent-purple: #00B2FF;
 				--border-color: rgba(0, 255, 255, 0.3);
 			}
 			
@@ -93,8 +93,8 @@ const defaultImage = image ?? `${base}/favicon.svg`;
 				--text-primary: #1f2937;
 				--text-secondary: #6b7280;
 				--accent-cyan: #0891b2;
-				--accent-magenta: #db2777;
-				--accent-purple: #7c3aed;
+				--accent-magenta: #2906f1;
+				--accent-purple: #00B2FF;
 				--border-color: rgba(8, 145, 178, 0.3);
 			}
 			
@@ -257,6 +257,6 @@ const defaultImage = image ?? `${base}/favicon.svg`;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: #ff00ff;
+    background: #2906f1;
   }
 </style>

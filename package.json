@@ -10,8 +10,9 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/rss": "^4.0.13",
-    "astro": "^5.15.3",
+    "@astrojs/rss": "^4.0.14",
+    "astro": "^5.16.1",
+    "gsap": "^3.13.0",
     "sharp": "^0.32.0",
     "vanilla-tilt": "^1.8.1"
   },

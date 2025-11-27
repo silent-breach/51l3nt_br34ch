@@ -2,14 +2,14 @@
 export const teamConfig = {
   // GitHub organization or main team repository
   github: {
-    enabled: true, // Set to true when you have a GitHub org/repo
+    enabled: false, // Set to true when you have a GitHub org/repo
     org: 'nexolab-team', // Your GitHub organization name
     repos: [], // Specific repos to track (empty = all public repos)
   },
   
   // CTFTime team profile - 51l3nt_br34ch
   ctftime: {
-    enabled: true, // Set to true when you have a CTFTime team
+    enabled: false, // Set to true when you have a CTFTime team
     teamId: 409004 // Your CTFTime team ID
   },
   

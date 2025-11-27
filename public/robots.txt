@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nexolabs.github.io/sitemap.xml
+Sitemap: https://silent-breach.github.io/51l3nt_br34ch/sitemap.xml
 
 # Crawl-delay: 10
 # Disallow: /admin/

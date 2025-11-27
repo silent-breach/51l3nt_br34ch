@@ -10,8 +10,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
-import { generateAchievements, getAllStats } from '../utils/achievements.js';
-import { hasAnyPlatformConnected } from '../config/team.js';
 
 // Auto-update stats from writeups
 const allWriteups = await getCollection('writeups');
@@ -21,13 +19,56 @@ const latestDate = allWriteups.length > 0
       .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   : 'November 2025';
 
-// Fetch real achievements from connected platforms
-const dynamicAchievements = await generateAchievements();
-const stats = await getAllStats();
-const hasPlatforms = hasAnyPlatformConnected();
+// Note: Removed external platform fetching to avoid SSR delays
 
 // Get base URL for asset paths
 const base = import.meta.env.BASE_URL || '';
+
+// Helpers
+function getPlacementClass(text = '') {
+  const t = String(text).toLowerCase();
+  const has = (k) => t.includes(k);
+  if (has('1st') || has('first') || has(' position 1') || has('#1') || has(' won ') || has('winner')) return 'gold';
+  if (has('2nd') || has('second') || has(' position 2') || has('#2')) return 'silver';
+  if (has('3rd') || has('third') || has(' position 3') || has('#3')) return 'bronze';
+  if (has('top 10') || has('top10') || has('top 5') || has('finalist') || has('finals')) return 'top';
+  return 'default';
+}
+
+// Data-driven Competition Timeline (easy to edit)
+// Add new items at the top; `side` will auto alternate on render
+const competitions = [
+  {
+    event: 'Safaricom PwnZone CTF 2025',
+    date: '10 October 2025',
+    org: 'Safaricom',
+    placement: 'Emerged position 9 out of 39',
+  },
+  {
+    event: 'AFRICERT Cyberdrill 2025',
+    date: '26 September 2025',
+    org: 'AFRICERT',
+    placement: 'Emerged position 12 in the continent(Africa)',
+  },
+];
+
+// Date formatting helper for the new date cards
+function parseDateParts(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      return { raw: String(dateStr) };
+    }
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = d.toLocaleString('en-US', { month: 'short' });
+    const year = d.getFullYear().toString();
+    return { day, month, year };
+  } catch {
+    return { raw: String(dateStr) };
+  }
+}
+
+const competitionsParsed = competitions.map((c) => ({ ...c, parts: parseDateParts(c.date) }));
 ---
 
 <Layout title="Achievements - NexoLabs">
@@ -78,47 +119,73 @@ const base = import.meta.env.BASE_URL || '';
         </p>
       </div>
 
-      <!-- Competition Wins -->
-      <div class="mb-20">
-        <h2 class="text-3xl font-orbitron text-magenta-400 mb-8">
+      <!-- Competition Wins (Vertical Timeline) -->
+      <div class="mb-24">
+        <h2 class="text-3xl font-orbitron text-magenta-400 mb-10">
           <span class="text-cyan-400">//</span> Competition Wins & Top Placements
         </h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="achievement-item">
-            <div class="achievement-rank first">1st</div>
-            <div class="achievement-details">
-              <h3 class="achievement-title">Safaricom CTF 2025</h3>
-              <p class="achievement-date">August 2025</p>
-              <p class="achievement-desc">Dominated the scoreboard with perfect position and solve rate</p>
-            </div>
-          </div>
-          
-          <div class="achievement-item">
-            <div class="achievement-rank second">2nd</div>
-            <div class="achievement-details">
-              <h3 class="achievement-title">CyberApocalypse CTF 2025</h3>
-              <p class="achievement-date">September 2025</p>
-              <p class="achievement-desc">Strong performance across all categories</p>
-            </div>
-          </div>
-          
-          <div class="achievement-item">
-            <div class="achievement-rank third">3rd</div>
-            <div class="achievement-details">
-              <h3 class="achievement-title">PicoCTF 2025</h3>
-              <p class="achievement-date">August 2025</p>
-              <p class="achievement-desc">Top placement in international competition</p>
-            </div>
-          </div>
-          
-          <div class="achievement-item">
-            <div class="achievement-rank top10">Top 10</div>
-            <div class="achievement-details">
-              <h3 class="achievement-title">DEF CON CTF Qualifiers 2025</h3>
-              <p class="achievement-date">May 2025</p>
-              <p class="achievement-desc">Qualified for semi-finals round</p>
-            </div>
+
+        <div class="relative timeline" role="list" aria-label="Competition wins and top placements timeline">
+          <!-- center line -->
+          <div class="absolute left-1/2 -translate-x-1/2 top-0 h-full w-1 bg-gradient-to-b from-magenta-500/60 via-cyan-500/60 to-magenta-500/60 rounded pointer-events-none"></div>
+          <!-- animated progress line -->
+          <div class="timeline-progress absolute left-1/2 -translate-x-1/2 top-0 w-1 rounded bg-cyan-400/70 shadow-[0_0_25px_rgba(0,255,255,0.45)] pointer-events-none" style="height: 0;"></div>
+
+          <div class="space-y-16">
+            {competitionsParsed.map((c, idx) => (
+              <div class="timeline-item will-change-transform" data-idx={idx} role="listitem">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                  {idx % 2 === 0 ? (
+                    <div class="md:pr-24 order-2 md:order-1">
+                      <div class="flex md:justify-end">
+                        <article class="timeline-card neon-glass hover:glow-lg" tabindex="0" aria-label={`${c.event} — ${c.placement}`}>
+                          <header class="flex items-center gap-2 mb-3">
+                            <span class="event-bullet" aria-hidden="true">⚡</span>
+                            <h3 class="event-title">{c.event}</h3>
+                            {c.org && (<span class="org-badge" title={`Organizer: ${c.org}`}>{c.org}</span>)}
+                          </header>
+                          <p class={`placement-chip ${getPlacementClass(c.placement)}`}>{c.placement}</p>
+                        </article>
+                      </div>
+                    </div>
+                  ) : (
+                    <div class="md:pl-24 order-2 md:order-2">
+                      <div class="flex md:justify-start">
+                        <article class="timeline-card neon-glass hover:glow-lg" tabindex="0" aria-label={`${c.event} — ${c.placement}`}>
+                          <header class="flex items-center gap-2 mb-3">
+                            <span class="event-bullet" aria-hidden="true">⚡</span>
+                            <h3 class="event-title">{c.event}</h3>
+                            {c.org && (<span class="org-badge" title={`Organizer: ${c.org}`}>{c.org}</span>)}
+                          </header>
+                          <p class={`placement-chip ${getPlacementClass(c.placement)}`}>{c.placement}</p>
+                        </article>
+                      </div>
+                    </div>
+                  )}
+
+                  <!-- marker column -->
+                  <div class="relative order-1 md:order-2 h-full">
+                    <div class="timeline-dot" aria-hidden="true"></div>
+                    <div class={`date-card-wrap ${idx % 2 === 0 ? 'date-right md:text-left' : 'date-left md:text-right'}`}>
+                      <div class="date-card neon-glass hover:glow" tabindex="0" aria-label={`Date ${c.date}`}>
+                        {c.parts?.raw && (
+                          <span class="date-raw">{c.parts.raw}</span>
+                        )}
+                        {!c.parts?.raw && (
+                          <span class="date-month" aria-hidden="true">{c.parts.month}</span>
+                        )}
+                        {!c.parts?.raw && (
+                          <span class="date-day">{c.parts.day}</span>
+                        )}
+                        {!c.parts?.raw && (
+                          <span class="date-year" aria-hidden="true">{c.parts.year}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -139,7 +206,7 @@ const base = import.meta.env.BASE_URL || '';
             <img src={`${base}/assets/certs/cert1.jpg`} alt="CTF Achievement Certificate" class="cert-image" loading="lazy" />
             <div class="cert-info">
               <h3 class="cert-name">CTF Achievement</h3>
-              <p class="cert-holder">NexoLabs Team</p>
+              <p class="cert-holder">51l3nt_br34ch// Team</p>
             </div>
           </div>
           
@@ -147,98 +214,22 @@ const base = import.meta.env.BASE_URL || '';
             <img src={`${base}/assets/certs/cert2.webp`} alt="Security Training Certificate" class="cert-image" loading="lazy" />
             <div class="cert-info">
               <h3 class="cert-name">Security Training</h3>
-              <p class="cert-holder">NexoLabs Team</p>
+              <p class="cert-holder">51l3nt_br34ch// Team</p>
             </div>
           </div>
-          
-          <div class="cert-card-img" data-cert={`${base}/assets/certs/cert3.webp`}>
-            <img src={`${base}/assets/certs/cert3.webp`} alt="Penetration Testing Certificate" class="cert-image" loading="lazy" />
-            <div class="cert-info">
-              <h3 class="cert-name">Penetration Testing</h3>
-              <p class="cert-holder">NexoLabs Team</p>
-            </div>
-          </div>
-          
-          <div class="cert-card-img" data-cert={`${base}/assets/certs/cert4.webp`}>
-            <img src={`${base}/assets/certs/cert4.webp`} alt="Ethical Hacking Certificate" class="cert-image" loading="lazy" />
-            <div class="cert-info">
-              <h3 class="cert-name">Ethical Hacking</h3>
-              <p class="cert-holder">NexoLabs Team</p>
-            </div>
-          </div>
-          
-          <div class="cert-card-img" data-cert={`${base}/assets/certs/cert5.webp`}>
-            <img src={`${base}/assets/certs/cert5.webp`} alt="Advanced Security Certificate" class="cert-image" loading="lazy" />
-            <div class="cert-info">
-              <h3 class="cert-name">Advanced Security</h3>
-              <p class="cert-holder">NexoLabs Team</p>
-            </div>
-          </div>
+
         </div>
       </div>
 
-      <!-- Notable Achievements - Dynamic from GitHub/Socials -->
-      <div>
-        <h2 class="text-3xl font-orbitron text-magenta-400 mb-8">
-          <span class="text-cyan-400">//</span> Notable Achievements
-        </h2>
-        
-        {!hasPlatforms ? (
-          <!-- No platforms connected - show setup message -->
-          <div class="no-data-card">
-            <div class="no-data-icon">🔌</div>
-            <h3 class="no-data-title">No Platforms Connected</h3>
-            <p class="no-data-desc">
-              Connect your team's GitHub, CTFTime, or social accounts to automatically display achievements here.
-            </p>
-            <p class="no-data-instructions">
-              Edit <code class="text-cyan-400">src/config/team.js</code> to configure your platforms:
-            </p>
-            <ul class="no-data-list">
-              <li>✅ Set <code>enabled: true</code> for each platform</li>
-              <li>✅ Add your organization/team IDs</li>
-              <li>✅ Rebuild the site to see live data</li>
-            </ul>
-          </div>
-        ) : (
-          <!-- Dynamic achievements from connected platforms -->
-          <div class="space-y-4">
-            {dynamicAchievements.length === 0 ? (
-              <div class="achievement-badge">
-                <div class="badge-icon">⏳</div>
-                <div>
-                  <h3 class="badge-title">Loading Achievements...</h3>
-                  <p class="badge-desc">Fetching data from connected platforms. This may take a moment.</p>
-                </div>
-              </div>
-            ) : (
-              dynamicAchievements.map(achievement => (
-                <div class="achievement-badge">
-                  <div class="badge-icon">{achievement.icon}</div>
-                  <div>
-                    <h3 class="badge-title">{achievement.title}</h3>
-                    <p class="badge-desc">{achievement.description}</p>
-                  </div>
-                </div>
-              ))
-            )}
-            
-            <!-- Always show writeups achievement -->
-            {writeupCount > 0 && (
-              <div class="achievement-badge">
-                <div class="badge-icon">📚</div>
-                <div>
-                  <h3 class="badge-title">Community Educator</h3>
-                  <p class="badge-desc">Published {writeupCount}+ detailed technical writeups viewed by thousands of security enthusiasts</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <!-- Notable Achievements section removed per request to avoid API waits -->
     </div>
   </section>
 </Layout>
+
+<!-- Animations (GSAP) bundled via Vite: inline import triggers bundling so bare imports like 'gsap' work in the module -->
+<script type="module">
+  import '/src/scripts/achievements-anim.js';
+</script>
 
 <style>
   /* Colorized emojis */
@@ -453,6 +444,161 @@ const base = import.meta.env.BASE_URL || '';
   .no-data-list code {
     @apply bg-black/50 border border-cyan-500/30 px-2 py-1 rounded text-xs;
   }
+
+  /* Timeline styles */
+  .timeline { min-height: 200px; }
+  .timeline-dot {
+    @apply bg-magenta-500;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    top: 0.25rem;
+    width: 14px; height: 14px;
+    border-radius: 9999px;
+    box-shadow: 0 0 0 6px rgba(236, 72, 153, 0.25), 0 0 18px rgba(236, 72, 153, 0.35);
+    animation: dotPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 0 6px rgba(236,72,153,0.25), 0 0 18px rgba(236,72,153,0.35); }
+    50% { box-shadow: 0 0 0 8px rgba(236,72,153,0.35), 0 0 28px rgba(236,72,153,0.45); }
+  }
+  /* Modern card look for timeline entries */
+  .timeline-card {
+    @apply bg-black/50 border border-cyan-500/30 rounded-xl p-5 md:p-6;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 255, 255, 0.12);
+    transform: translateY(0);
+    transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  }
+  .timeline-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 40px rgba(0, 255, 255, 0.18);
+    border-color: rgba(41, 6, 241, 0.5);
+  }
+  .neon-glass {
+    background: linear-gradient(180deg, rgba(0, 255, 255, 0.06), rgba(41, 6, 241, 0.04));
+  }
+  .event-bullet { filter: drop-shadow(0 0 10px rgba(0,255,255,0.35)); }
+  .event-title { @apply font-orbitron text-lg md:text-xl text-cyan-400; }
+  .org-badge {
+    @apply font-mono text-xs md:text-sm text-purple-400 border border-purple-500/40 rounded-full px-2 py-0.5;
+    background: rgba(0, 178, 255, 0.08);
+  }
+  .placement-chip {
+    @apply font-mono text-sm md:text-base text-gray-200;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(0, 204, 204, 0.35);
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.9rem;
+  }
+  .placement-chip.gold {
+    @apply text-yellow-300;
+    border-color: rgba(234, 179, 8, 0.55);
+    box-shadow: 0 0 18px rgba(234, 179, 8, 0.25);
+  }
+  .placement-chip.silver {
+    @apply text-gray-200;
+    border-color: rgba(209, 213, 219, 0.5);
+    box-shadow: 0 0 16px rgba(209, 213, 219, 0.2);
+  }
+  .placement-chip.bronze {
+    @apply text-orange-300;
+    border-color: rgba(251, 146, 60, 0.5);
+    box-shadow: 0 0 16px rgba(251, 146, 60, 0.22);
+  }
+  .placement-chip.top {
+    @apply text-cyan-300;
+    border-color: rgba(0, 255, 255, 0.55);
+    box-shadow: 0 0 18px rgba(0, 255, 255, 0.25);
+  }
+  .pill {
+    @apply font-mono text-sm md:text-base rounded-full px-3 py-1 bg-black/60 border border-magenta-500/40 text-magenta-400 shadow;
+  }
+  .title-pill {
+    @apply font-semibold text-magenta-400 border-magenta-500/60;
+  }
+  .desc-box {
+    @apply text-gray-300 font-mono text-sm md:text-base bg-black/50 border border-cyan-500/30 rounded-lg px-4 py-3 max-w-2xl;
+  }
+
+  /* Date side — modern card look */
+  .date-card-wrap {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 1.25rem; /* positioned just below the dot now that the center pill is removed */
+    width: 100%;
+    max-width: 20rem;
+    display: none;
+    z-index: 1;
+    --date-offset: clamp(120px, 12vw, 260px);
+  }
+  @media (min-width: 768px) { /* md */
+    .date-card-wrap { display: block; }
+  }
+  /* Position helpers: push the card to the left/right side from the center line */
+  @media (min-width: 768px) { /* md */
+    .date-card-wrap.date-left {
+      transform: translateX(calc(-50% - var(--date-offset)));
+      text-align: right;
+    }
+    .date-card-wrap.date-right {
+      transform: translateX(calc(-50% + var(--date-offset)));
+      text-align: left;
+    }
+  }
+  .date-card {
+    @apply bg-black/50 border border-cyan-500/30 rounded-xl px-4 py-3 inline-flex items-end gap-2;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 255, 255, 0.12);
+    transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  }
+  .date-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 40px rgba(0, 255, 255, 0.18);
+    border-color: rgba(41, 6, 241, 0.5);
+  }
+  .date-month {
+    @apply font-mono text-xs uppercase tracking-widest text-magenta-400; 
+    background: rgba(41, 6, 241, 0.18);
+    border: 1px solid rgba(41, 6, 241, 0.45);
+    border-radius: 9999px;
+    padding: 0.2rem 0.5rem;
+  }
+  .date-day {
+    @apply font-orbitron text-3xl leading-none text-cyan-400;
+    text-shadow: 0 0 12px rgba(0,255,255,0.35);
+    line-height: 1;
+  }
+  .date-year {
+    @apply font-mono text-sm text-gray-300 opacity-80;
+    margin-left: 0.25rem;
+  }
+  .date-raw {
+    @apply font-mono text-sm text-gray-200;
+  }
+
+  /* Micro glow hovers to mimic PNG neon feel */
+  .hover\:glow:hover {
+    box-shadow: 0 0 0 2px rgba(30,4,193,0.45), 0 0 18px rgba(41,6,241,0.35);
+    transform: translateY(-1px);
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
+  .hover\:glow-lg:hover {
+    box-shadow: 0 0 0 2px rgba(0,204,204,0.4), 0 0 28px rgba(0,178,255,0.35);
+    transform: translateY(-2px);
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
 </style>
+
+<!-- No-JS fallback to ensure timeline items are visible even if scripts fail or are disabled -->
+<noscript>
+  <style>
+    .timeline-item { opacity: 1 !important; transform: none !important; }
+    .timeline-progress { height: 100% !important; }
+  </style>
+  <div class="sr-only">Animations are disabled because JavaScript is off.</div>
+  
+</noscript>
 
 <!-- Global lightbox handles all image clicks now - no custom script needed -->

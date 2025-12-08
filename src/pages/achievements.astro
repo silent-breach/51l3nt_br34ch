@@ -27,7 +27,7 @@ const base = import.meta.env.BASE_URL || '';
 // Helpers
 function getPlacementClass(text = '') {
   const t = String(text).toLowerCase();
-  const has = (k) => t.includes(k);
+  const has = (k: string) => t.includes(k);
   if (has('1st') || has('first') || has(' position 1') || has('#1') || has(' won ') || has('winner')) return 'gold';
   if (has('2nd') || has('second') || has(' position 2') || has('#2')) return 'silver';
   if (has('3rd') || has('third') || has(' position 3') || has('#3')) return 'bronze';
@@ -60,7 +60,7 @@ const competitions = [
 ];
 
 // Date formatting helper for the new date cards
-function parseDateParts(dateStr) {
+function parseDateParts(dateStr: string) {
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) {

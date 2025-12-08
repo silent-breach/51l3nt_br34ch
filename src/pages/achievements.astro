@@ -14,10 +14,13 @@ import { getCollection } from 'astro:content';
 // Auto-update stats from writeups
 const allWriteups = await getCollection('writeups');
 const writeupCount = allWriteups.length;
-const latestDate = allWriteups.length > 0 
-  ? new Date(Math.max(...allWriteups.map(w => new Date(w.data.date).getTime())))
-      .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-  : 'November 2025';
+// Use the latest writeup date, but never show a date older than now
+const latestWriteupTime = allWriteups.length > 0
+  ? Math.max(...allWriteups.map((w) => new Date(w.data.date).getTime()))
+  : 0;
+const nowTime = Date.now();
+const latestTime = Math.max(latestWriteupTime, nowTime);
+const latestDate = new Date(latestTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
 // Note: Removed external platform fetching to avoid SSR delays
 
